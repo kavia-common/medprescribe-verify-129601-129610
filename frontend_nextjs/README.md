@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedPrescribe Verify (Frontend)
 
-## Getting Started
+Modern, light-themed, responsive Next.js app for creating and verifying medical prescriptions using browser-based Solana wallets.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Doctor and Pharmacist role switching
+- Doctor:
+  - Create prescription via form
+  - Connect Solana wallet and sign canonical message
+  - Saves signed prescription locally (localStorage)
+  - Quick copy for JSON, message, and signature
+- Pharmacist:
+  - Paste full JSON or separate fields (message, signature, doctor public key)
+  - Lightweight verification (structure/presence). Note: full ed25519 verification requires extra libraries
+- No backend required
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quickstart
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies
+   ```bash
+   npm install
+   ```
+2. Run dev server
+   ```bash
+   npm run dev
+   ```
+3. Open http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Solana Wallet
 
-## Learn More
+This app expects a browser-injected Solana wallet (e.g., Phantom). If no wallet is detected, connecting/signing will show an error. For production-grade signature verification, integrate an ed25519 verification library (e.g., tweetnacl) or verify on a backend.
 
-To learn more about Next.js, take a look at the following resources:
+## Theming
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Theme colors:
+- Primary: #1976d2
+- Secondary: #0277bd
+- Accent: #43a047
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app uses simple CSS variables and minimal Tailwind utilities.
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- All prescriptions are stored locally in the browser (localStorage).
+- No environment variables are required.
