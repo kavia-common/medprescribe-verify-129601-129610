@@ -108,7 +108,11 @@ export default function DoctorView() {
       alert(`Prescription signed, memo sent on-chain.\nTransaction: ${txSig}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to sign or send memo transaction.";
-      setError(msg);
+      // Provide UX hint if common debit error is detected
+      const hint = typeof msg === "string" && msg.includes("Attempt to debit an account but found no record of a prior credit")
+        ? "\n\nAction: Use the devnet faucet or explorer to airdrop SOL to your wallet, then retry."
+        : "";
+      setError(`${msg}${hint}`);
     } finally {
       setIsSigning(false);
     }
@@ -178,7 +182,7 @@ export default function DoctorView() {
             <Button onClick={onSign} disabled={isSigning}>
               {isSigning ? "Signing..." : "Sign, Memo & Save"}
             </Button>
-            <Helper>Your wallet will sign the canonical JSON and submit a Memo transaction with the prescription data.</Helper>
+            <Helper>Your wallet will sign the canonical JSON and submit a Memo transaction with the prescription data. Ensure your devnet wallet has some SOL for fees (use the faucet if needed).</Helper>
           </div>
         </div>
       </Card>
