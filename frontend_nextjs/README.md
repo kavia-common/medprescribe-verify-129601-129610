@@ -40,7 +40,19 @@ Theme colors:
 
 The app uses simple CSS variables and minimal Tailwind utilities.
 
+## Configuration
+
+Set a custom Solana RPC endpoint via environment variable:
+
+1. Copy `.env.example` to `.env.local`
+2. Optionally update the RPC URL:
+   ```
+   NEXT_PUBLIC_SOLANA_RPC_URL=https://d6354dba629e.ngrok-free.app
+   ```
+3. Restart the dev server if running.
+
+If not set, the app defaults to the RPC in `.env.example`.
+
 ## Notes
 
 - All prescriptions are stored locally in the browser (localStorage).
-- No environment variables are required.

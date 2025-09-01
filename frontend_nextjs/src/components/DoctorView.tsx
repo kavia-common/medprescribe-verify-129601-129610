@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Helper, Input, Label, SectionTitle, TextArea } from "./ui";
-import { connectWallet, signMessage, sendMemoTransaction } from "@/lib/solana";
+import { connectWallet, signMessage, sendMemoTransaction, getSolanaRpcUrl } from "@/lib/solana";
 import { addPrescription, listPrescriptions, SignedPrescription, updatePrescriptionMemoSig } from "@/lib/storage";
 import { theme } from "@/lib/theme";
 
@@ -96,8 +96,8 @@ export default function DoctorView() {
       // Save immediately for UX
       addPrescription(signed);
 
-      // Broadcast memo transaction carrying the prescription data
-      const txSig = await sendMemoTransaction(publicKey, memoText);
+      // Broadcast memo transaction carrying the prescription data (use configured RPC)
+      const txSig = await sendMemoTransaction(publicKey, memoText, getSolanaRpcUrl());
 
       // Update saved record with the tx signature for reference
       updatePrescriptionMemoSig(signed.id, txSig);
@@ -204,7 +204,7 @@ export default function DoctorView() {
                   </p>
                   {p.payload.memoTxSig && (
                     <p className="text-xs mt-1" style={{ color: theme.muted }}>
-                      Memo Tx: <a className="underline" href={`https://explorer.solana.com/tx/${p.payload.memoTxSig}?cluster=devnet`} target="_blank" rel="noreferrer">{p.payload.memoTxSig}</a>
+                      Memo Tx: <a className="underline" href={`https://explorer.solana.com/tx/${p.payload.memoTxSig}`} target="_blank" rel="noreferrer">{p.payload.memoTxSig}</a>
                     </p>
                   )}
                 </div>
