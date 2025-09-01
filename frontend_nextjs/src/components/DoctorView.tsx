@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Helper, Input, Label, SectionTitle, TextArea } from "./ui";
-import { connectWallet, signMessage } from "@/lib/solana";
-import { addPrescription, listPrescriptions, SignedPrescription } from "@/lib/storage";
+import { connectWallet, signMessage, sendMemoTransaction } from "@/lib/solana";
+import { addPrescription, listPrescriptions, SignedPrescription, updatePrescriptionMemoSig } from "@/lib/storage";
 import { theme } from "@/lib/theme";
 
 type MedRow = { name: string; dosage: string; instructions: string };
@@ -24,6 +24,7 @@ export default function DoctorView() {
   const [isSigning, setIsSigning] = useState(false);
   const [walletPk, setWalletPk] = useState<string>("");
   const [error, setError] = useState<string>("");
+
 
   const history = useMemo(() => listPrescriptions(), []);
 
@@ -46,6 +47,18 @@ export default function DoctorView() {
     return { payload, canonical };
   }, [patientName, patientDOB, meds, notes]);
 
+  useEffect(() => {
+    // attempt to auto-connect to display pk (non-intrusive)
+    (async () => {
+      try {
+        const info = await connectWallet();
+        setWalletPk(info.publicKey);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
   const onConnect = async () => {
     setError("");
     try {
@@ -66,19 +79,35 @@ export default function DoctorView() {
         throw new Error("Please provide patient details and at least one medication.");
       }
       const { signature, publicKey } = await signMessage(canonical);
+
+      const memoText = JSON.stringify({
+        v: 1,
+        kind: "prescription",
+        data: { ...payload, doctorPublicKey: publicKey },
+      });
+
       const signed: SignedPrescription = {
         id: uuid(),
         payload: { ...payload, doctorPublicKey: publicKey },
         signature,
         message: canonical,
       };
+
+      // Save immediately for UX
       addPrescription(signed);
+
+      // Broadcast memo transaction carrying the prescription data
+      const txSig = await sendMemoTransaction(publicKey, memoText);
+
+      // Update saved record with the tx signature for reference
+      updatePrescriptionMemoSig(signed.id, txSig);
+
       // Reset form minimal
       setNotes("");
       setMeds([{ name: "", dosage: "", instructions: "" }]);
-      alert("Prescription signed and saved locally.");
+      alert(`Prescription signed, memo sent on-chain.\nTransaction: ${txSig}`);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to sign prescription.";
+      const msg = e instanceof Error ? e.message : "Failed to sign or send memo transaction.";
       setError(msg);
     } finally {
       setIsSigning(false);
@@ -147,16 +176,16 @@ export default function DoctorView() {
 
           <div className="flex items-center gap-2">
             <Button onClick={onSign} disabled={isSigning}>
-              {isSigning ? "Signing..." : "Sign & Save"}
+              {isSigning ? "Signing..." : "Sign, Memo & Save"}
             </Button>
-            <Helper>Your wallet will be asked to sign a canonical JSON of this prescription.</Helper>
+            <Helper>Your wallet will sign the canonical JSON and submit a Memo transaction with the prescription data.</Helper>
           </div>
         </div>
       </Card>
 
       <Card>
         <SectionTitle>Prescription History (Local)</SectionTitle>
-        <Helper>Stored in your browser only. Share the JSON with pharmacists for verification.</Helper>
+        <Helper>Stored in your browser only. Each entry may include an on-chain memo transaction signature.</Helper>
         <div className="mt-3 space-y-3 max-h-[520px] overflow-auto pr-1">
           {history.length === 0 && <p className="text-sm" style={{ color: theme.muted }}>No prescriptions saved yet.</p>}
           {history.map((p) => (
@@ -169,6 +198,11 @@ export default function DoctorView() {
                   <p className="text-xs" style={{ color: theme.muted }}>
                     Doctor PK: {p.payload.doctorPublicKey}
                   </p>
+                  {p.payload.memoTxSig && (
+                    <p className="text-xs mt-1" style={{ color: theme.muted }}>
+                      Memo Tx: <a className="underline" href={`https://explorer.solana.com/tx/${p.payload.memoTxSig}?cluster=devnet`} target="_blank" rel="noreferrer">{p.payload.memoTxSig}</a>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <CopyButton label="Copy JSON" content={JSON.stringify(p, null, 2)} />
