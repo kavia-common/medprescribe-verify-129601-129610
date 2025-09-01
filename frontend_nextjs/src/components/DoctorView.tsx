@@ -184,21 +184,40 @@ export default function DoctorView() {
   );
 }
 
+import { copyToClipboard } from "@/lib/clipboard";
+
 function CopyButton({ content, label }: { content: string; label: string }) {
-  const [ok, setOk] = useState(false);
+  const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
+
   const onCopy = async () => {
-    await navigator.clipboard.writeText(content);
-    setOk(true);
-    setTimeout(() => setOk(false), 1000);
+    try {
+      await copyToClipboard(content);
+      setStatus("ok");
+      setTimeout(() => setStatus("idle"), 1200);
+    } catch (e) {
+      console.error(e);
+      setStatus("err");
+      setTimeout(() => setStatus("idle"), 1500);
+    }
   };
+
+  const bg =
+    status === "ok" ? theme.accent : status === "err" ? "#fecaca" : "transparent";
+  const text =
+    status === "ok" ? "#fff" : status === "err" ? "#991b1b" : theme.text;
+  const labelText = status === "ok" ? "Copied" : status === "err" ? "Failed" : label;
+
   return (
     <button
       onClick={onCopy}
-      className="px-3 py-1 rounded-md text-xs border"
-      style={{ borderColor: theme.border, color: theme.text, background: ok ? theme.accent : "transparent" }}
+      className="px-3 py-1 rounded-md text-xs border transition-colors"
+      style={{ borderColor: theme.border, color: text, background: bg }}
       aria-live="polite"
+      aria-label={label}
+      title={status === "err" ? "Copy failed. Your browser may not allow copying in this context." : label}
+      type="button"
     >
-      {ok ? "Copied" : label}
+      {labelText}
     </button>
   );
 }
