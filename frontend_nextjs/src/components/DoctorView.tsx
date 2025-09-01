@@ -184,21 +184,37 @@ export default function DoctorView() {
   );
 }
 
+import { copyTextToClipboard } from "@/lib/clipboard";
+
 function CopyButton({ content, label }: { content: string; label: string }) {
-  const [ok, setOk] = useState(false);
+  const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
+
   const onCopy = async () => {
-    await navigator.clipboard.writeText(content);
-    setOk(true);
-    setTimeout(() => setOk(false), 1000);
+    setStatus("idle");
+    const res = await copyTextToClipboard(content);
+    if (res.ok) {
+      setStatus("ok");
+    } else {
+      console.error("Copy failed:", res.error);
+      setStatus("err");
+    }
+    setTimeout(() => setStatus("idle"), 1200);
   };
+
+  const bg =
+    status === "ok" ? theme.accent : status === "err" ? "#ef4444" : "transparent";
+  const text = status === "ok" ? "Copied" : status === "err" ? "Failed" : label;
+
   return (
     <button
       onClick={onCopy}
       className="px-3 py-1 rounded-md text-xs border"
-      style={{ borderColor: theme.border, color: theme.text, background: ok ? theme.accent : "transparent" }}
+      style={{ borderColor: theme.border, color: theme.text, background: bg }}
       aria-live="polite"
+      aria-label={label}
+      type="button"
     >
-      {ok ? "Copied" : label}
+      {text}
     </button>
   );
 }
