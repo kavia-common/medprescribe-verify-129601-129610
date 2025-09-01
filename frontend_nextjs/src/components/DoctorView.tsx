@@ -188,31 +188,39 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 
 function CopyButton({ content, label }: { content: string; label: string }) {
   const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
+  const [reason, setReason] = useState<string | undefined>(undefined);
 
   const onCopy = async () => {
     setStatus("idle");
+    setReason(undefined);
     const res = await copyTextToClipboard(content);
     if (res.ok) {
       setStatus("ok");
     } else {
-      console.error("Copy failed:", res.error);
+      console.error("Copy failed:", res.error, res.reason);
+      setReason(res.reason || res.error || "Copy failed.");
       setStatus("err");
     }
-    setTimeout(() => setStatus("idle"), 1200);
+    setTimeout(() => {
+      setStatus("idle");
+      setReason(undefined);
+    }, 1800);
   };
 
   const bg =
     status === "ok" ? theme.accent : status === "err" ? "#ef4444" : "transparent";
-  const text = status === "ok" ? "Copied" : status === "err" ? "Failed" : label;
+  const text =
+    status === "ok" ? "Copied" : status === "err" ? (reason ? `Failed: ${reason}` : "Failed") : label;
 
   return (
     <button
       onClick={onCopy}
       className="px-3 py-1 rounded-md text-xs border"
-      style={{ borderColor: theme.border, color: theme.text, background: bg }}
+      style={{ borderColor: theme.border, color: theme.text, background: bg, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
       aria-live="polite"
       aria-label={label}
       type="button"
+      title={status === "err" && reason ? reason : label}
     >
       {text}
     </button>
